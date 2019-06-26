@@ -1,0 +1,55 @@
+{
+    "accessKey":"EE35CF02BF28533628A64594A8641E04",
+    "secretKey":"8E110D81823C9C5F1A773FCC54415DC8",
+    "regionId": "cn-east-2",
+    "maxCount": 1,
+    "instanceSpec": {
+        "name": "test",
+        "az": "cn-east-2a",
+        "description": "",
+        "instanceType": "c.n2.large",
+        "password": "Lxy320826!!",
+        "imageId": "img-m3jm2o3kr1",
+        "systemDisk": {
+            "diskCategory": "cloud",
+            "autoDelete": true,
+            "cloudDiskSpec": {
+                "encrypt": false,
+                "snapshotId": "",
+                "diskType": "ssd.io1",
+                "description": "",
+                "name": "test",
+                "multiAttachable": false,
+                "diskSizeGB": 100
+            }
+        },
+        "dataDisks": [
+            {
+                "diskCategory": "cloud",
+                "autoDelete": true,
+                "cloudDiskSpec": {
+                    "encrypt": false,
+                    "snapshotId": "",
+                    "diskType": "ssd.io1",
+                    "description": "",
+                    "name": "test",
+                    "multiAttachable": false,
+                    "diskSizeGB": 20
+                }
+            }
+        ],
+        "primaryNetworkInterface": {
+            "networkInterface": {
+                "sanityCheck": 1,
+                "subnetId": "subnet-ny8x2pro75",
+                "description": "",
+                "securityGroups": ["sg-w4jivtndv2"]
+            },
+            "deviceIndex": 1
+        },
+        "elasticIp": {
+            "provider": "bgp",
+            "bandwidthMbps": 2
+        }
+    }
+}
