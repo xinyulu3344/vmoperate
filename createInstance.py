@@ -231,10 +231,11 @@ def getDataDiskIdss(deleteObj):
 
 # 判断实例是否绑定公网ip，返回公网ip的id
 def getFloatIpId(instanceInfo):
-    if "elasticIpId" in instanceInfo["instance"].keys():
-        return instanceInfo["instance"]["elasticIpId"]
-    else:
-        return None
+    if instanceInfo is not None:
+        if "elasticIpId" in instanceInfo["instance"].keys():
+            return instanceInfo["instance"]["elasticIpId"]
+        else:
+            return None
 
 
 # 删除绑定的公网ip
@@ -264,10 +265,12 @@ def deleteFloatIps(deleteObj, floatIpIdss):
 # 获取已挂载数据盘id
 def getDataDiskIds(instanceInfo):
     diskIds = list()
-    if "dataDisks" in instanceInfo["instance"].keys():
-        for dataDisk in instanceInfo["instance"]["dataDisks"]:
-            if dataDisk["status"] == "attached":
-                diskIds.append(dataDisk["cloudDisk"]["diskId"])
+    if instanceInfo is not None:
+        if "dataDisks" in instanceInfo["instance"].keys():
+            for dataDisk in instanceInfo["instance"]["dataDisks"]:
+                if dataDisk["status"] == "attached":
+                    diskIds.append(dataDisk["cloudDisk"]["diskId"])
+        return diskIds
     return diskIds
 
 
