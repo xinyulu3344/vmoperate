@@ -2,7 +2,7 @@
     "accessKey":"EE35CF02BF28533628A64594A8641E04",
     "secretKey":"8E110D81823C9C5F1A773FCC54415DC8",
     "regionId": "cn-east-2",
-    "maxCount": 1,
+    "maxCount": 20,
     "instanceSpec": {
         "name": "test",
         "az": "cn-east-2a",

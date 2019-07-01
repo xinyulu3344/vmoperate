@@ -2,6 +2,7 @@
 import time
 import json
 import sys
+import copy
 from jdcloud_sdk.core.credential import Credential
 from jdcloud_sdk.core.logger import Logger
 from jdcloud_sdk.services.vm.client.VmClient import VmClient
@@ -13,6 +14,8 @@ from jdcloud_sdk.services.vm.apis.DescribeInstanceRequest import DescribeInstanc
 from jdcloud_sdk.services.vm.apis.DeleteInstanceRequest import DeleteInstanceParameters, DeleteInstanceRequest
 from jdcloud_sdk.services.vpc.apis.DeleteElasticIpRequest import DeleteElasticIpParameters, DeleteElasticIpRequest
 from jdcloud_sdk.services.disk.apis.DeleteDiskRequest import DeleteDiskParameters, DeleteDiskRequest
+from jdcloud_sdk.services.vm.apis.DescribeInstanceStatusRequest import DescribeInstanceStatusParameters, \
+    DescribeInstanceStatusRequest
 from jdcloud_sdk.core.config import Config
 
 
@@ -126,15 +129,15 @@ def createInstance(confObj, deleteObj):
 
 
 # 获取待删除主机实例id列表
-def getInstanceIds(deleteObj):
-    instanceIds = dict()
+def getInstanceIdss(deleteObj):
+    instanceIdss = dict()
     for instanceItem in deleteObj["instanceItems"]:
         regionId = instanceItem["regionId"]
-        if regionId not in instanceIds.keys():
-            instanceIds[regionId] = []
+        if regionId not in instanceIdss.keys():
+            instanceIdss[regionId] = []
         for instanceId in instanceItem["instanceIds"]:
-            instanceIds[regionId].append(instanceId)
-    return instanceIds
+            instanceIdss[regionId].append(instanceId)
+    return instanceIdss
 
 
 # 删除实例
@@ -298,18 +301,51 @@ def deleteDataDisks(deleteObj, dataDiskIdss):
             deleteDataDisk(regionId, dataDiskIds)
 
 
-def main(confObj, deleteObj):
+# 查询关机状态的主机
+# def describeStatusStop(instanceIdss):
+#
+#     for regionId, instanceIds in instanceIdss.items():
+#         instanceIdsTemp = copy.deepcopy(instanceIds)
+#         for instanceId in instanceIds:
+#             instanceInfo = getInstanceInfo(regionId, instanceId)
+#             if instanceInfo is not None:
+#                 if instanceInfo["instance"]["status"] != "stopped":
+#                     # 将状态不是stopped的主机从列表中移除
+#                     instanceIdsTemp.remove(instanceId)
+#         instanceIdss[regionId] = instanceIdsTemp
+#     return instanceIdss
+def describeStatusStop(deleteObj):
 
+    instancesItems = list()
+
+    for instancesItem in deleteObj["instanceItems"]:
+        regionId = instancesItem["regionId"]
+        instanceIdsTemp = copy.deepcopy(instancesItem["instanceIds"])
+        for instanceId in instancesItem["instanceIds"]:
+            instanceInfo = getInstanceInfo(regionId, instanceId)
+            if instanceInfo is not None:
+                if instanceInfo["instance"]["status"] != "stopped":
+                    instanceIdsTemp.remove(instanceId)
+            else:
+                instanceIdsTemp.remove(instanceId)
+        instancesItem["instanceIds"] = instanceIdsTemp
+        instancesItems.append(instancesItem)
+    return instancesItems
+
+
+def main(confObj, deleteObj):
     if sys.argv[1] == "delete":
 
-        instanceIdss = getInstanceIds(deleteObj)
+        instanceIdss = getInstanceIdss(deleteObj)
         floatIpIdss = getFloatIpIds(deleteObj)
         dataDiskIdss = getDataDiskIdss(deleteObj)
 
         print("待删除主机id: ", json.dumps(instanceIdss))
+        print()
         print("绑定公网ip: ", json.dumps(floatIpIdss))
+        print()
         print("绑定数据盘: ", json.dumps(dataDiskIdss))
-        print("")
+        print()
 
         # 删除云主机实例
         print("正在删除云主机...")
@@ -331,9 +367,13 @@ def main(confObj, deleteObj):
 
         # 还原delete.json文件
         setDefaultForDeleteFile(deleteObj)
-
     elif sys.argv[1] == "create":
         createInstance(confObj, deleteObj)
+    elif sys.argv[1] == "qstop":
+        # instanceIdss = getInstanceIdss(deleteObj)
+        # instanceIdssStoppedStatus = describeStatusStop(instanceIdss)
+        instanceIdssStoppedStatus = describeStatusStop(deleteObj)
+        print("关机状态的主机: ", json.dumps(instanceIdssStoppedStatus))
     else:
         exit("argument error, please choose create or delete")
 
