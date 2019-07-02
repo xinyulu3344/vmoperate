@@ -91,3 +91,9 @@ python3 createInstance.py create
 ```
 python3 createInstance.py delete
 ```
+
+## 查询delete.json列表中关机状态的云主机
+
+```
+python3 createInstance.py qstop
+```
