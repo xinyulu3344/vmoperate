@@ -106,7 +106,7 @@ python3 createInstance.py delete
 
 **注意:**
 
-该命令会查询出delete.json文件中，停机状态的云主机，并将停机主机的id保存到stop.json文件中。
+该命令会查询出delete.json文件中，停机状态的云主机，并将停机主机的id保存到stop.json文件中，同时将这些主机id从delete.json文件中移除
 
 ```
 python3 createInstance.py qstop
