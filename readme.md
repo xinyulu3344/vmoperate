@@ -48,9 +48,9 @@ unzip vmoperate.zip
 
 # 二、脚本使用
 
-## 编辑配置文件
+## 1. 配置文件
 
-### conf.json
+### 1.1. conf.json
 
 配置详细说明请参考: https://docs.jdcloud.com/cn/virtual-machines/api/createinstances
 
@@ -69,31 +69,53 @@ unzip vmoperate.zip
     securityGroups: 安全组
 11. elasticIp: 弹性公网ip配置，如果没有需要可去掉
 
-### delete.json
+### 1.2 delete.json
 
 autoDeleteFloatIp: 删除云主机时，是否同时删除公网ip
 autoDeleteDataDisk: 删除云主机时，是否同时删除数据盘，如果conf.json中，数据盘的autoDelete设置都为true，建议把这个参数设为false
 
-## 创建云主机
+### 1.3 stop.json
 
-注意：创建云主机时，如果数据盘参数的autoDelete设为true，则该数据盘会随着主机释放而释放
+结构同delete.json文件相同，用于执行qstop命令后，将delete.json文件中，停机状态的云主机id保存到此文件中
+
+## 2. 创建云主机
+
+**注意：**
+
+创建云主机时，如果数据盘参数的autoDelete设为true，则该数据盘会随着主机释放而释放
 
 执行命令: 
 ```
 python3 createInstance.py create
 ```
 
-## 删除云主机
+## 3. 删除云主机
 
-注意: 删除云主机时，如果指定delete.json文件中，autoDeleteFloatIp和autoDeleteDataDisk值为true，表示同时删除绑定的公网ip和数据盘
+**注意:**
 
-执行命令
+1. 删除云主机时，如果指定delete.json文件中，autoDeleteFloatIp和autoDeleteDataDisk值为true，表示同时删除绑定的公网ip和数据盘
+2. 此命令会删除所有在delete.json文件列表中的云主机，删除完成后，delete.json文件清空。
+
 ```
 python3 createInstance.py delete
 ```
 
-## 查询delete.json列表中关机状态的云主机
+## 4. 查询delete.json列表中关机状态的云主机
+
+**注意:**
+
+该命令会查询出delete.json文件中，停机状态的云主机，并将停机主机的id保存到stop.json文件中。
 
 ```
 python3 createInstance.py qstop
+```
+
+## 5. 删除停机状态云主机
+
+**注意:**
+
+该命令会删除stop.json文件中的所有云主机，删除完成后会清空stop.json文件。
+
+```
+python3 createInstance.py qdelete
 ```

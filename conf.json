@@ -1,14 +1,14 @@
 {
-    "accessKey":"EE35CF02BF28533628A64594A8641E04",
-    "secretKey":"8E110D81823C9C5F1A773FCC54415DC8",
+    "accessKey":"",
+    "secretKey":"",
     "regionId": "cn-east-2",
-    "maxCount": 20,
+    "maxCount": 80,
     "instanceSpec": {
         "name": "test",
         "az": "cn-east-2a",
         "description": "",
         "instanceType": "c.n2.large",
-        "password": "Lxy320826!!",
+        "password": "",
         "imageId": "img-m3jm2o3kr1",
         "systemDisk": {
             "diskCategory": "cloud",

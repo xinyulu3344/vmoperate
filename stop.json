@@ -1,0 +1,5 @@
+{
+    "autoDeleteFloatIp": true,
+    "autoDeleteDataDisk": false,
+    "instanceItems": []
+}

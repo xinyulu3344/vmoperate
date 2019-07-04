@@ -25,6 +25,13 @@ def readconf(jsonfile):
         return json.load(load_f)
 
 
+# 将object序列化写入指定文件
+def writeIntoJson(object, filename):
+    with open(filename, 'w') as f:
+        json.dump(object, f, indent=4)
+        print(filename, "文件更新")
+
+
 # 将主机id追加入delete.json文件，后续删除云主机读取该文件
 def writeInDeleteFile(confObj, deleteObj, instanceIds):
     instanceItem = dict()
@@ -37,10 +44,10 @@ def writeInDeleteFile(confObj, deleteObj, instanceIds):
 
 
 # 恢复配置
-def setDefaultForDeleteFile(deleteObj):
-    deleteObj["instanceItems"].clear()
-    with open("delete.json", 'w') as f:
-        json.dump(deleteObj, f, indent=4)
+def setDefaultForDeleteFile(obj, filename):
+    obj["instanceItems"].clear()
+    with open(filename, 'w') as f:
+        json.dump(obj, f, indent=4)
 
 
 def getVmClient(accessKey, secretKey):
@@ -129,9 +136,9 @@ def createInstance(confObj, deleteObj):
 
 
 # 获取待删除主机实例id列表
-def getInstanceIdss(deleteObj):
+def getInstanceIdss(obj):
     instanceIdss = dict()
-    for instanceItem in deleteObj["instanceItems"]:
+    for instanceItem in obj["instanceItems"]:
         regionId = instanceItem["regionId"]
         if regionId not in instanceIdss.keys():
             instanceIdss[regionId] = []
@@ -141,11 +148,11 @@ def getInstanceIdss(deleteObj):
 
 
 # 删除实例
-def deleteInstance(deleteObj):
+def deleteInstance(obj):
     client = getVmClient(access_key, secret_key)
 
     # 删除云主机实例
-    for instanceItem in deleteObj["instanceItems"]:
+    for instanceItem in obj["instanceItems"]:
         regionId = instanceItem["regionId"]
         for instanceId in instanceItem["instanceIds"]:
 
@@ -203,9 +210,9 @@ def getInstanceInfo(regionId, instanceId):
 
 
 # 获取绑定云主机的ip id
-def getFloatIpIds(deleteObj):
+def getFloatIpIds(obj):
     floatIpIds = dict()
-    for instanceItem in deleteObj["instanceItems"]:
+    for instanceItem in obj["instanceItems"]:
         regionId = instanceItem["regionId"]
         if regionId not in floatIpIds.keys():
             floatIpIds[regionId] = []
@@ -218,9 +225,9 @@ def getFloatIpIds(deleteObj):
 
 
 # 获取待删除数据盘id
-def getDataDiskIdss(deleteObj):
+def getDataDiskIdss(obj):
     dataDiskIdss = dict()
-    for instanceItem in deleteObj["instanceItems"]:
+    for instanceItem in obj["instanceItems"]:
         regionId = instanceItem["regionId"]
         if regionId not in dataDiskIdss.keys():
             dataDiskIdss[regionId] = []
@@ -257,9 +264,9 @@ def deleteFloatIp(regionId, floatIpId):
 
 
 # 批量删除公网ip
-def deleteFloatIps(deleteObj, floatIpIdss):
+def deleteFloatIps(obj, floatIpIdss):
     # 判断delete.json中，autoDeleteFloatIp是否为true
-    if deleteObj["autoDeleteFloatIp"]:
+    if obj["autoDeleteFloatIp"]:
         for regionId, floatIpIds in floatIpIdss.items():
             for floatIpId in floatIpIds:
                 deleteFloatIp(regionId, floatIpId)
@@ -295,45 +302,43 @@ def deleteDataDisk(regionId, diskIds):
 
 
 # 批量删除数据盘
-def deleteDataDisks(deleteObj, dataDiskIdss):
-    if deleteObj["autoDeleteDataDisk"]:
+def deleteDataDisks(obj, dataDiskIdss):
+    if obj["autoDeleteDataDisk"]:
         for regionId, dataDiskIds in dataDiskIdss.items():
             deleteDataDisk(regionId, dataDiskIds)
 
 
 # 查询关机状态的主机
-# def describeStatusStop(instanceIdss):
-#
-#     for regionId, instanceIds in instanceIdss.items():
-#         instanceIdsTemp = copy.deepcopy(instanceIds)
-#         for instanceId in instanceIds:
-#             instanceInfo = getInstanceInfo(regionId, instanceId)
-#             if instanceInfo is not None:
-#                 if instanceInfo["instance"]["status"] != "stopped":
-#                     # 将状态不是stopped的主机从列表中移除
-#                     instanceIdsTemp.remove(instanceId)
-#         instanceIdss[regionId] = instanceIdsTemp
-#     return instanceIdss
-def describeStatusStop(deleteObj):
-
-    instancesItems = list()
-
+def describeStatusStop(deleteObj, stopObj):
+    # 遍历delete.json文件中instanceItems字段
     for instancesItem in deleteObj["instanceItems"]:
         regionId = instancesItem["regionId"]
-        instanceIdsTemp = copy.deepcopy(instancesItem["instanceIds"])
-        for instanceId in instancesItem["instanceIds"]:
+        # 向stopObj的instanceItems添加空字典
+        stopObj["instanceItems"].append(dict())
+        # 初始化新添加的字典
+        stopObj["instanceItems"][-1]["regionId"] = regionId
+        stopObj["instanceItems"][-1]["instanceIds"] = list()
+        # 遍历当前instancesItem中的实例列表
+        for instanceId in instancesItem["instanceIds"][:]:
+            # 获取当前实例的主机信息
             instanceInfo = getInstanceInfo(regionId, instanceId)
             if instanceInfo is not None:
-                if instanceInfo["instance"]["status"] != "stopped":
-                    instanceIdsTemp.remove(instanceId)
+                # 如果主机状态是stopped
+                if instanceInfo["instance"]["status"] == "stopped":
+                    # 从deleteObj中移除实例Id
+                    instancesItem["instanceIds"].remove(instanceId)
+                    # 将关机的实例添加进stopObj
+                    stopObj["instanceItems"][-1]["instanceIds"].append(instanceId)
             else:
-                instanceIdsTemp.remove(instanceId)
-        instancesItem["instanceIds"] = instanceIdsTemp
-        instancesItems.append(instancesItem)
-    return instancesItems
+                instancesItem["instanceIds"].remove(instanceId)
+    print("关机状态主机: ", json.dumps(stopObj))
+    # 将stopObj序列化写入stop.json文件
+    writeIntoJson(stopObj, "stop.json")
+    # 将deleteObj序列化写入delete.json
+    writeIntoJson(deleteObj, "delete.json")
 
 
-def main(confObj, deleteObj):
+def main(confObj, deleteObj, stopObj):
     if sys.argv[1] == "delete":
 
         instanceIdss = getInstanceIdss(deleteObj)
@@ -366,23 +371,48 @@ def main(confObj, deleteObj):
         deleteDataDisks(deleteObj, dataDiskIdss)
 
         # 还原delete.json文件
-        setDefaultForDeleteFile(deleteObj)
+        setDefaultForDeleteFile(deleteObj, "delete.json")
     elif sys.argv[1] == "create":
         createInstance(confObj, deleteObj)
     elif sys.argv[1] == "qstop":
-        # instanceIdss = getInstanceIdss(deleteObj)
-        # instanceIdssStoppedStatus = describeStatusStop(instanceIdss)
-        instanceIdssStoppedStatus = describeStatusStop(deleteObj)
-        print("关机状态的主机: ", json.dumps(instanceIdssStoppedStatus))
+        describeStatusStop(deleteObj, stopObj)
+    elif sys.argv[1] == "qdelete":
+        instanceIdss = getInstanceIdss(stopObj)
+        floatIpIdss = getFloatIpIds(stopObj)
+        dataDiskIdss = getDataDiskIdss(stopObj)
+        print("待删除主机id: ", json.dumps(instanceIdss))
+        print()
+        print("绑定公网ip: ", json.dumps(floatIpIdss))
+        print()
+        print("绑定数据盘: ", json.dumps(dataDiskIdss))
+        print()
+        # 删除云主机实例
+        print("正在删除云主机...")
+        deleteInstance(stopObj)
+        # 判断主机是否已经删除完毕
+        while True:
+            time.sleep(10)
+            if judgeInstancesNotExist(instanceIdss):
+                break
+        print("云主机删除完成!")
+        # 删除绑定的公网ip
+        deleteFloatIps(stopObj, floatIpIdss)
+
+        # 删除绑定数据盘
+        deleteDataDisks(stopObj, dataDiskIdss)
+
+        # 还原delete.json文件
+        setDefaultForDeleteFile(stopObj, "stop.json")
     else:
-        exit("argument error, please choose create or delete")
+        exit("argument error, please choose create、delete、qstop、qdelete")
 
 
 if __name__ == "__main__":
     confObj = readconf("conf.json")
     deleteObj = readconf("delete.json")
+    stopObj = readconf("stop.json")
     access_key = confObj["accessKey"]
     secret_key = confObj["secretKey"]
     if len(sys.argv) != 2:
         exit("number of arguments error")
-    main(confObj, deleteObj)
+    main(confObj, deleteObj, stopObj)
