@@ -361,14 +361,14 @@ def main(confObj, deleteObj, stopObj):
     if sys.argv[1] == "delete":
 
         instanceIdss = getInstanceIdss(deleteObj)
-        floatIpIdss = getFloatIpIds(deleteObj)
-        dataDiskIdss = getDataDiskIdss(deleteObj)
+        # floatIpIdss = getFloatIpIds(deleteObj)
+        # dataDiskIdss = getDataDiskIdss(deleteObj)
 
         print("待删除主机id: ", json.dumps(instanceIdss))
         print()
-        print("绑定公网ip: ", json.dumps(floatIpIdss))
+        # print("绑定公网ip: ", json.dumps(floatIpIdss))
         print()
-        print("绑定数据盘: ", json.dumps(dataDiskIdss))
+        # print("绑定数据盘: ", json.dumps(dataDiskIdss))
         print()
 
         # 删除云主机实例
@@ -384,10 +384,10 @@ def main(confObj, deleteObj, stopObj):
         print("云主机删除完成!")
 
         # 删除绑定的公网ip
-        deleteFloatIps(deleteObj, floatIpIdss)
+        # deleteFloatIps(deleteObj, floatIpIdss)
 
         # 删除绑定数据盘
-        deleteDataDisks(deleteObj, dataDiskIdss)
+        # deleteDataDisks(deleteObj, dataDiskIdss)
 
         # 还原delete.json文件
         setDefaultForDeleteFile(deleteObj, "delete.json")
@@ -396,14 +396,15 @@ def main(confObj, deleteObj, stopObj):
     elif sys.argv[1] == "qstop":
         describeStatusStop(deleteObj, stopObj)
     elif sys.argv[1] == "qdelete":
+        oldMd5 = getFileMd5("stop.json")
         instanceIdss = getInstanceIdss(stopObj)
-        floatIpIdss = getFloatIpIds(stopObj)
-        dataDiskIdss = getDataDiskIdss(stopObj)
+        # floatIpIdss = getFloatIpIds(stopObj)
+        # dataDiskIdss = getDataDiskIdss(stopObj)
         print("待删除主机id: ", json.dumps(instanceIdss))
         print()
-        print("绑定公网ip: ", json.dumps(floatIpIdss))
+        # print("绑定公网ip: ", json.dumps(floatIpIdss))
         print()
-        print("绑定数据盘: ", json.dumps(dataDiskIdss))
+        # print("绑定数据盘: ", json.dumps(dataDiskIdss))
         print()
         # 删除云主机实例
         print("正在删除云主机...")
@@ -415,11 +416,15 @@ def main(confObj, deleteObj, stopObj):
                 break
         print("云主机删除完成!")
         # 删除绑定的公网ip
-        deleteFloatIps(stopObj, floatIpIdss)
+        # deleteFloatIps(stopObj, floatIpIdss)
 
         # 删除绑定数据盘
-        deleteDataDisks(stopObj, dataDiskIdss)
+        # deleteDataDisks(stopObj, dataDiskIdss)
 
+        newMd5 = getFileMd5("stop.json")
+        if oldMd5 != newMd5:
+            print("qdelete MD5校验未通过，qdelete前后stop.json文件md5不一致")
+            return
         # 还原stop.json文件
         setDefaultForDeleteFile(stopObj, "stop.json")
     else:
