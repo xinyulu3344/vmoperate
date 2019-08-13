@@ -2,7 +2,8 @@
 import time
 import json
 import sys
-import copy
+import os
+import hashlib
 from jdcloud_sdk.core.credential import Credential
 from jdcloud_sdk.core.logger import Logger
 from jdcloud_sdk.services.vm.client.VmClient import VmClient
@@ -14,8 +15,6 @@ from jdcloud_sdk.services.vm.apis.DescribeInstanceRequest import DescribeInstanc
 from jdcloud_sdk.services.vm.apis.DeleteInstanceRequest import DeleteInstanceParameters, DeleteInstanceRequest
 from jdcloud_sdk.services.vpc.apis.DeleteElasticIpRequest import DeleteElasticIpParameters, DeleteElasticIpRequest
 from jdcloud_sdk.services.disk.apis.DeleteDiskRequest import DeleteDiskParameters, DeleteDiskRequest
-from jdcloud_sdk.services.vm.apis.DescribeInstanceStatusRequest import DescribeInstanceStatusParameters, \
-    DescribeInstanceStatusRequest
 from jdcloud_sdk.core.config import Config
 
 
@@ -310,6 +309,7 @@ def deleteDataDisks(obj, dataDiskIdss):
 
 # 查询关机状态的主机
 def describeStatusStop(deleteObj, stopObj):
+    oldMd5 = getFileMd5("delete.json")
     # 遍历delete.json文件中instanceItems字段
     for instancesItem in deleteObj["instanceItems"]:
         regionId = instancesItem["regionId"]
@@ -331,11 +331,30 @@ def describeStatusStop(deleteObj, stopObj):
                     stopObj["instanceItems"][-1]["instanceIds"].append(instanceId)
             else:
                 instancesItem["instanceIds"].remove(instanceId)
+    newMd5 = getFileMd5("delete.json")
+    if oldMd5 != newMd5:
+        print("qstop MD5校验未通过，qstop前后delete.json文件md5不一致")
+        return
     print("关机状态主机: ", json.dumps(stopObj))
     # 将stopObj序列化写入stop.json文件
     writeIntoJson(stopObj, "stop.json")
     # 将deleteObj序列化写入delete.json
     writeIntoJson(deleteObj, "delete.json")
+
+
+# 校验文件md5
+def getFileMd5(filename):
+    if not os.path.isfile(filename):
+        return
+    myHash = hashlib.md5()
+    f = open(filename, 'rb')
+    while True:
+        b = f.read(8096)
+        if not b:
+            break
+        myHash.update(b)
+    f.close()
+    return myHash.hexdigest()
 
 
 def main(confObj, deleteObj, stopObj):
@@ -401,7 +420,7 @@ def main(confObj, deleteObj, stopObj):
         # 删除绑定数据盘
         deleteDataDisks(stopObj, dataDiskIdss)
 
-        # 还原delete.json文件
+        # 还原stop.json文件
         setDefaultForDeleteFile(stopObj, "stop.json")
     else:
         exit("argument error, please choose create、delete、qstop、qdelete")
